@@ -1,0 +1,17 @@
+<style>
+  .bar {
+    width: 25px;
+    height: 100px;
+    background-color: blue;
+  }
+.tooltip{
+  position: absolute;
+  background-color:pink;
+  color:blue;
+  padding:10px;
+  border-radius:5px;
+  opacity:0;
+  transition:opacity 0.3s;
+  
+}
+</style>
