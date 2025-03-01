@@ -1,0 +1,128 @@
+// !! IMPORTANT README:
+
+// You may add additional external JS and CSS as needed to complete the project, however the current external resource MUST remain in place for the tests to work. BABEL must also be left in place. 
+
+/***********
+INSTRUCTIONS:
+  - Select the project you would 
+    like to complete from the dropdown 
+    menu.
+  - Click the "RUN TESTS" button to
+    run the tests against the blank 
+    pen.
+  - Click the "TESTS" button to see 
+    the individual test cases. 
+    (should all be failing at first)
+  - Start coding! As you fulfill each
+    test case, you will see them go   
+    from red to green.
+  - As you start to build out your 
+    project, when tests are failing, 
+    you should get helpful errors 
+    along the way!
+    ************/
+
+// PLEASE NOTE: Adding global style rules using the * selector, or by adding rules to body {..} or html {..}, or to all elements within body or html, i.e. h1 {..}, has the potential to pollute the test suite's CSS. Try adding: * { color: red }, for a quick example!
+
+// Once you have read the above messages, you can delete all comments. 
+const padding = 60;
+const svg = d3.select("body")
+                  .append("svg")
+                  .attr("width", "920")
+                  .attr("height", "630")
+                  .attr("class", "graph")
+
+var rawData =[];
+var oXHR = new XMLHttpRequest();
+
+    // Initiate request.
+    oXHR.onreadystatechange = reportStatus;
+    oXHR.open("GET",
+    "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/cyclist-data.json", false);  // get json file.
+    oXHR.send();
+function reportStatus() {
+        if (oXHR.readyState == XMLHttpRequest.DONE) {		// Check if request is complete.
+           rawData = JSON.parse(this.responseText)
+          console.log("fetch success")
+        }else{
+          console.log("fetch error")
+        }
+}
+var i;
+var m,j
+//create 2d data from raw data array ----------------
+var key;
+var dataset = [];
+var data_data = [];
+const year =[]
+
+const year_min = d3.min(rawData, (d)=>(d.Year))
+const year_max = d3.max(rawData, (d)=>(d.Year))
+
+const parseTime = d3.timeParse("%M:%S");
+const time_min = d3.min(rawData, (d)=>(parseTime(d.Time)))
+const time_max = d3.max(rawData, (d)=>(parseTime(d.Time)))
+console.log(new Date(rawData[0].Time))
+const xScale = d3.scaleLinear()
+                .domain([year_min, year_max])
+                .range([60, 740]);
+    
+const yScale = d3.scaleTime()
+                  .domain([time_max, time_min])
+                  .range([500, 0]);
+
+const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d"));
+const yAxis = d3.axisLeft(yScale).tickFormat(d3.timeFormat("%M:%S"));
+
+var tooltip = d3.select("body")
+    .append("div")
+    .style("background", "#007")
+    .style("visibility", "hidden")
+    .attr("id","tooltip")
+    .attr("class","tooltip")
+    
+const outer_g = svg.append("g")
+       .attr("transform", "translate(" + 60 + ", "+ 100 + ")")
+       
+outer_g.append("g")
+       .attr("transform", "translate(" + 0 + ", "+ 500 + ")")
+       .attr("id", "x-axis")
+       .call(xAxis);
+
+outer_g.append("g")
+       .attr("transform", "translate(" + 60 + ", "+ 0 + ")")
+       .attr("id", "y-axis")
+       .call(yAxis);
+
+outer_g.append("g")
+       .attr("id", "legend")
+
+   outer_g.selectAll("circle")
+          .data(rawData)
+          .enter()
+          .append("circle")
+          .attr("data-xvalue",(d) =>d.Year)
+          .attr("data-yvalue",(d) => (parseTime(d.Time)).toISOString())
+          .attr("cx", (d) => xScale((d.Year)))
+          .attr("cy", (d) => yScale(parseTime(d.Time)))
+          .attr("r", 6)
+          .attr("class", "dot")
+          .style("fill","rgb(31,119,180)")
+          .on("mouseover",function(event) {
+               
+               let y = d3.select(this).attr("data-yvalue");
+              
+               let x = d3.select(this).attr("data-xvalue");
+             
+            tooltip.style("visibility", "visible")
+            .html(`Year:${x}, Time:${y}`)
+            .attr("data-year",x)
+            //.style("left",(d3.event.pageX+100)+"px")
+            //.style("top", (d3.event.pageY+100)+"px")
+          })
+         .on("mouseout", function(){return tooltip.style("visibility", "hidden");})
+
+     rawData.forEach(function(d,i){
+                 let name = d.Name;
+                  console.log(name)
+               });
