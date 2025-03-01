@@ -1,0 +1,128 @@
+const padding = 60;
+const svg = d3.select("body")
+                  .append("svg")
+                  .attr("width", "1603")
+                  .attr("height", "540")
+
+var rawData
+var oXHR = new XMLHttpRequest();
+
+    // Initiate request.
+    oXHR.onreadystatechange = reportStatus;
+    oXHR.open("GET",
+    "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/global-temperature.json", false);  // get json file.
+    oXHR.send();
+function reportStatus() {
+        if (oXHR.readyState == XMLHttpRequest.DONE) {		// Check if request is complete.
+           rawData = JSON.parse(this.responseText)
+          console.log("fetch success")
+        }else{
+          console.log("fetch error")
+        }
+}
+var i;
+var m,j
+//create 2d data from raw data array ----------------
+var data_data = [];
+const dataset =[]
+for(i = 0; i < rawData.monthlyVariance.length; i++){
+     data_data[i] = rawData.monthlyVariance[i]; 
+}
+
+const months = ["January","February","March","April","May","June","July","August","September","October","November","December"]
+
+for(i = 0; i < data_data.length; i++){
+
+ dataset.push({'month':months[data_data[i].month-1], 'year': data_data[i].year, 'temp':8.66+data_data[i].variance});
+}
+const year_min = d3.min(dataset, (d)=>(d.year))
+const year_max = d3.max(dataset, (d)=>(d.year))
+console.log(typeof(dataset[0].year))
+const xScale = d3.scaleLinear()
+                .domain([year_min, year_max])
+                .range([60, 1603-300]);
+    
+const yScale = d3.scaleBand()
+                 .domain(dataset.map(d=> d.month))
+                 .range([540-60, 60]);
+
+const tempScale = d3.scaleSequential(d3.interpolateViridis)
+                    .domain([d3.min(dataset, d=> d.temp), d3.max(dataset, d=> d.temp)])
+                    ;
+
+const legendScale = d3.scaleLinear()
+                      .domain([d3.min(dataset, d=> d.temp), d3.max(dataset, d=> d.temp)])
+                      .range([0,300]);
+
+const xAxis = d3.axisBottom(xScale).tickFormat(d3.format("d"));
+const yAxis = d3.axisLeft(yScale);
+const legendAxis = d3.axisBottom(legendScale).ticks(11);
+const parseMonth = d3.timeParse("%B")
+
+var tooltip = d3.select("body")
+    .append("div")
+    .style("background", "#007")
+    .style("visibility", "hidden")
+    .attr("id","tooltip")
+    
+svg.append("g")
+       .attr("transform", "translate(" + -5 + ", "+ 439 + ")")
+       .attr("id", "x-axis")
+       .call(xAxis);
+
+svg.append("g")
+       .attr("transform","translate(" + 55 + ", "+ -41 +")")
+       .attr("id", "y-axis")
+       .call(yAxis);
+
+const legend_g = svg.append("g")
+       .attr("transform","translate(" + 147 + ", "+ 490+")")
+       .attr("id", "legend")
+       .attr("class","legend")
+
+const inner_legend = legend_g.append("g")
+     
+inner_legend.selectAll("rect")
+            .data(dataset)
+            .enter()
+            .append("rect")
+            .attr("x", d=>legendScale(d.temp))
+            .attr("y", 0)
+            .attr("width", 30)
+            .attr("height", 20)
+            .style("fill",d=>tempScale(d.temp));
+
+const outer_legend =legend_g.append("g")
+                 .attr("transform","translate(" + 0 + ", "+ 20+")")
+                 .call(legendAxis);
+
+const outer_g = svg.append("g")
+       .attr("transform","translate(" + -7 + ", "+ -41+")")
+       .attr("class","map")
+
+outer_g.selectAll("rect")
+       .data(dataset.flat())
+       .enter()
+       .append("rect")
+       .attr("data-month",d=> parseMonth(d.month).getMonth())
+       .attr("data-year",(d) =>d.year)
+       .attr("data-temp",(d) =>d.temp)
+       .attr("x", d => xScale(d.year))
+       .attr("y", d=> yScale(d.month))
+       .attr("width", 5)
+       .attr("height", 35)
+       .attr("class", "cell")
+       .style("fill",d => tempScale(d.temp))
+       .on("mouseover",function(event) {
+      
+            let y = d3.select(this).attr("data-temp");
+            let x = d3.select(this).attr("data-year");
+            console.log(x)
+         tooltip.style("visibility", "visible")
+         .html(`Year: ${x}<br>${y}deg celsius`)
+         .attr("data-year",x)
+         .style("left",(d3.event.pageX+4)+"px")
+         .style("top", (d3.event.pageY-1)+"px")
+         .attr("transform","translateX(" + padding + "px)")
+       })
+       .on("mouseout", function(){return tooltip.style("visibility", "hidden");})
