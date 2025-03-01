@@ -1,0 +1,133 @@
+// !! IMPORTANT README:
+
+// You may add additional external JS and CSS as needed to complete the project, however the current external resource MUST remain in place for the tests to work. BABEL must also be left in place. 
+
+/***********
+INSTRUCTIONS:
+  - Select the project you would 
+    like to complete from the dropdown 
+    menu.
+  - Click the "RUN TESTS" button to
+    run the tests against the blank 
+    pen.
+  - Click the "TESTS" button to see 
+    the individual test cases. 
+    (should all be failing at first)
+  - Start coding! As you fulfill each
+    test case, you will see them go   
+    from red to green.
+  - As you start to build out your 
+    project, when tests are failing, 
+    you should get helpful errors 
+    along the way!
+    ************/
+
+// PLEASE NOTE: Adding global style rules using the * selector, or by adding rules to body {..} or html {..}, or to all elements within body or html, i.e. h1 {..}, has the potential to pollute the test suite's CSS. Try adding: * { color: red }, for a quick example!
+
+// Once you have read the above messages, you can delete all comments.
+const padding = 60;
+const svg = d3.select("body")
+                  .append("svg")
+                  .attr("width", "900")
+                  .attr("height", "460")
+
+var rawData
+var oXHR = new XMLHttpRequest();
+
+    // Initiate request.
+    oXHR.onreadystatechange = reportStatus;
+    oXHR.open("GET",
+    "https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json", false);  // get json file.
+    oXHR.send();
+function reportStatus() {
+        if (oXHR.readyState == XMLHttpRequest.DONE) {		// Check if request is complete.
+           rawData = JSON.parse(this.responseText)
+          console.log("fetch success")
+        }else{
+          console.log("fetch error")
+        }
+}
+var i;
+var m,j
+//create 2d data from raw data array ----------------
+var key;
+var dataset = [];
+var data_data = [];
+const year =[]
+
+for(i = 0; i < rawData.data.length; i++){
+  for(j = 0; j < rawData.data[i].length;j++){  
+     if(typeof(rawData.data[i][j]) === 'number'){
+        data_data[i] = rawData.data[i][j];
+     }else if(typeof(rawData.data[i][j]) === 'string'){
+        year[i] = rawData.data[i][j];  
+     }  
+  }
+}
+for(let i=0; i<data_data.length; i++){
+  dataset.push({'date':year[i],'gdp':data_data[i]})
+}
+//console.log(dataset)
+// const parseDate = d3.timeParse("%Y-%m-%d");
+// dataset.forEach(d=>{
+//   d.date =parseDate(d.date)
+// })
+const min = d3.min(dataset, (d)=>new Date(d.date))
+const max = d3.max(dataset, (d)=>new Date(d.date))
+
+const xScale = d3.scaleTime()
+                .domain([min, max])
+                .range([60, 900-60]);
+    
+const yScale = d3.scaleLinear()
+                  .domain([0, d3.max(dataset, (d) => d.gdp)])
+                  .range([460-60, 60]);
+
+const xAxis = d3.axisBottom(xScale).tickFormat(d3.timeFormat("%Y"));
+const yAxis = d3.axisLeft(yScale);
+
+var tooltip = d3.select("body")
+    .append("div")
+    .style("background", "#007")
+    .style("visibility", "hidden")
+    .attr("id","tooltip")
+    
+
+svg.append("g")
+       .attr("transform", "translate(" + 60 + ", "+ 400 + ")")
+       .attr("id", "x-axis")
+       .call(xAxis);
+svg.append("g")
+       .attr("transform","translate(" + 120 + ", "+ 0+")")
+       .attr("id", "y-axis")
+       .call(yAxis);
+
+svg.selectAll("rect")
+       .data(dataset)
+       .enter()
+       .append("rect")
+       .attr("transform","translate(" + padding + ", 0)")
+       .attr("data-date",(d) =>d.date)
+       .attr("data-gdp",(d) =>d.gdp)
+       .attr("x", (d) => xScale(new Date(d.date)))
+       .attr("y", (d) => yScale(d.gdp))
+       .attr("width", 2.9)
+       .attr("height", (d) => d.gdp/53.2)
+       .attr("class", "bar")
+       .attr("index", (d,i)=>i)
+       .style("fill","rgb(51,173,255)")
+       .attr("transform","translate(" + padding + ", 0)")
+       .on("mouseover",function(event) {
+      
+            let y = d3.select(this).attr("data-gdp");
+            let x = d3.select(this).attr("data-date");
+            console.log(x)
+         
+         tooltip.style("visibility", "visible")
+         .html(`${x}<br>$${y} billion`)
+         .attr("data-date",x)
+         .style("left",(d3.event.pageX+4)+"px")
+         .style("top", (d3.event.pageY-1)+"px")
+         .attr("transform","translateX(" + padding + "px)")
+       })
+       .on("mouseout", function(){return tooltip.style("visibility", "hidden");})
